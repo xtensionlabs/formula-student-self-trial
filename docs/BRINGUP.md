@@ -44,3 +44,13 @@ Headless result with the synthetic drive: 62/62 landmarks, loop closures from th
   and the node correctly brakes / falls back; closed-loop behaviour is covered by `fs_control/sim.py` tests.
 - Nothing here has run against the live simulator yet.
 - `loop_closure_node` re-optimises the whole graph at every closing keyframe (~0.3 s at 60 keyframes).
+
+## First-run notes (learned on the live sim)
+- Copy the simulator settings for the bridge: cp /mnt/d/FSDS/settings.json ~/Formula-Student-Driverless-Simulator/settings.json
+  (the bridge reads its sensor list there; it must equal the simulator file). Start the bridge with UDP_control:=true in WSL.
+- autonomous.launch.py control:=false starts everything except the controllers: the car cannot move, use it to validate
+  perception/SLAM/planning (scripts/stack_check.py, scripts/eval_perception.py) before driving.
+- Without YOLO weights cones are coloured by side of the car (slam.yaml geo_vote: blue left, yellow right); camera colours override.
+- Source order: /opt/ros/humble, ~/fsds/ros2/install (fs_msgs), ~/fsds_ws/install. Use the python scripts, not the ros2 CLI
+  (the CLI is very slow on this machine).
+- CPU load: with the simulator running, MPC solves can exceed the 45 ms limit; the node then uses the ANN and logs a warning.

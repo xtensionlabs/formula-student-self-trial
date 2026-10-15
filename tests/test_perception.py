@@ -36,7 +36,10 @@ def test_rejects_too_tall_object() -> None:
 def test_projection_and_association() -> None:
     K = intrinsics_from_fov(800, 800, 90)
     # camera frame: x forward, y left. A point 10 m ahead, 2 m to the left -> left of image centre
-    uv, valid = project(np.array([[10.0, 2.0, 0.0], [-5.0, 0.0, 0.0]]), K)
+    uv, valid = project(np.array([[10.0, 2.0, 0.0], [-5.0, 0.0, 0.0]]), K, optical=False)
     assert valid.tolist() == [True, False] and uv[0, 0] < 400 and abs(uv[0, 1] - 400) < 1e-6
+    # same points in an optical frame (x right, y down, z forward) must land on the same pixels
+    uv_opt, _ = project(np.array([[-2.0, 0.0, 10.0]]), K)
+    assert np.allclose(uv_opt[0], uv[0])
     boxes = np.array([[uv[0, 0] - 10, 380, uv[0, 0] + 10, 420], [700, 700, 760, 760]])
     assert associate(uv, valid, boxes, gate_px=50).tolist() == [0, -1]   # behind-camera cone unmatched

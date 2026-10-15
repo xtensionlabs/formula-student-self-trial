@@ -26,19 +26,23 @@ def generate_launch_description() -> LaunchDescription:
     def node(pkg: str, exe: str, yaml: str = '', **extra) -> Node:
         params = [cfg(yaml)] if yaml else []
         params += [extra.pop('params', {})]
-        return Node(package=pkg, executable=exe, name=exe, output='screen', parameters=params, **extra)
+        return Node(package=pkg, executable=exe, name=extra.pop('name', exe), output='screen', parameters=params, **extra)
 
     return LaunchDescription([
         DeclareLaunchArgument('rviz', default_value='true', description='start RViz2'),
+        # control:=false -> perception/SLAM/planning only; the car cannot move (validate before driving)
+        DeclareLaunchArgument('control', default_value='true', description='start the controller nodes'),
         node('fs_state_estimation', 'state_estimator_node', 'state_estimator.yaml'),
         # model_path '' = LiDAR-only (cone colours unknown) until cones.pt is trained
         node('fs_perception', 'cone_detector_node', 'perception.yaml',
              params={'model_path': yolo if os.path.exists(yolo) else ''}),
+        # second (low, nose-mounted) LiDAR fills the blind zone of Lidar1; LiDAR-only, same output topic
+        node('fs_perception', 'cone_detector_node', 'perception_lidar2.yaml', name='cone_detector_lidar2'),
         node('fs_slam', 'slam_node', 'slam.yaml'),
         node('fs_slam', 'loop_closure_node', 'loop_closure.yaml'),
         node('fs_planning', 'path_planner_node', 'planner.yaml'),
-        node('fs_control', 'ann_controller_node', 'ann.yaml', params={'model_path': ann}),
-        node('fs_control', 'mpc_controller_node', 'mpc.yaml'),
+        node('fs_control', 'ann_controller_node', 'ann.yaml', params={'model_path': ann}, condition=IfCondition(LaunchConfiguration('control'))),
+        node('fs_control', 'mpc_controller_node', 'mpc.yaml', condition=IfCondition(LaunchConfiguration('control'))),
         node('fs_bringup', 'viz_node'),
         Node(package='rviz2', executable='rviz2', output='log', condition=IfCondition(LaunchConfiguration('rviz')),
              arguments=['-d', os.path.join(share, 'rviz', 'autonomous.rviz')]),

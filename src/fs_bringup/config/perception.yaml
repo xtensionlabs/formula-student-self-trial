@@ -17,5 +17,7 @@ cone_detector_node:
     lidar.h_min: 0.02
     lidar.min_aspect: 0.0
     lidar.max_range: 20.0
-    lidar.min_points: 3
+    lidar.min_points: 2
+    lidar.min_range: 0.8      # ignore returns from the car body
+    lidar.ground_dist: 0.03   # flat sim ground, noise-free LiDAR: keep far cone hits that skim the ground
     lidar.cluster_eps: 0.25

@@ -5,3 +5,5 @@ slam_node:
     map_frame: map
     vehicle_frame: fsds/FSCar
     confirm_hits: 3          # observations before a cone enters /slam/map
+    # No YOLO weights yet -> colour cones by side of the car (blue left, yellow right); camera colours override
+    geo_vote: 0.1

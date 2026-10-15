@@ -20,13 +20,15 @@ def intrinsics_from_fov(width: int, height: int, fov_deg: float) -> np.ndarray:
     return np.array([[f, 0, width / 2], [0, f, height / 2], [0, 0, 1.0]])
 
 
-def project(pts_cam: np.ndarray, K: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    """Project points in the camera frame (ENU-style: x fwd, y left, z up) to pixels.
+def project(pts_cam: np.ndarray, K: np.ndarray, optical: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+    """Project points in the camera frame to pixels.
+
+    optical=True: frame is already optical (x right, y down, z forward) - what the FSDS bridge publishes
+    (verified from the TF of fsds/cam1). optical=False: ENU-style (x fwd, y left, z up).
 
     Returns (uv (N,2), valid (N,) bool) - valid means the point is in front of the camera.
     """
-    # ENU camera axes -> optical axes (x right, y down, z forward)
-    opt = np.stack([-pts_cam[:, 1], -pts_cam[:, 2], pts_cam[:, 0]], axis=1)
+    opt = pts_cam if optical else np.stack([-pts_cam[:, 1], -pts_cam[:, 2], pts_cam[:, 0]], axis=1)
     valid = opt[:, 2] > 0.1
     uvw = opt @ K.T
     uv = uvw[:, :2] / np.where(valid, uvw[:, 2], 1.0)[:, None]

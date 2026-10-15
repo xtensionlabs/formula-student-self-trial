@@ -36,7 +36,8 @@ class Viz(Node):
         p('arrow_every', 2.0); p('v_max', 12.0)
         self.path: Optional[Path] = None
         qos = QoSProfile(depth=1, durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
-        self.pubs = {n: self.create_publisher(MarkerArray, f'/viz/{n}', 1) for n in ('perception', 'slam_map', 'corrected_map', 'velocity')}
+        self.pubs = {n: self.create_publisher(MarkerArray, f'/viz/{n}', 1) for n in ('perception', 'slam_map', 'velocity')}
+        self.pubs['corrected_map'] = self.create_publisher(MarkerArray, '/viz/corrected_map', qos)   # latched, RViz asks for it
         self.create_subscription(ConeArray, '/perception/cones', lambda m: self.pubs['perception'].publish(cone_markers(m, 'perception', 0.25)), 5)
         self.create_subscription(ConeArray, '/slam/map', lambda m: self.pubs['slam_map'].publish(cone_markers(m, 'slam', 0.35)), 5)
         self.create_subscription(ConeArray, '/slam/map_corrected', lambda m: self.pubs['corrected_map'].publish(cone_markers(m, 'corrected', 0.35)), qos)

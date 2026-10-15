@@ -14,6 +14,7 @@ from scipy.spatial import cKDTree
 @dataclass
 class LidarParams:
     max_range: float = 25.0        # ignore points further than this [m] (xy distance)
+    min_range: float = 0.0         # ignore points closer than this (car body returns) [m]
     ground_dist: float = 0.05      # RANSAC inlier distance to the ground plane [m]
     ransac_iters: int = 60
     max_height: float = 0.7        # discard points higher above ground than this [m]
@@ -56,7 +57,8 @@ def detect_cones(pts: np.ndarray, p: LidarParams = LidarParams(),
     """Return (centroids (N,3), covariances (N,4)) of cone-like clusters."""
     empty = np.zeros((0, 3)), np.zeros((0, 4))
     pts = pts[np.isfinite(pts).all(axis=1)]
-    pts = pts[np.hypot(pts[:, 0], pts[:, 1]) < p.max_range]      # range crop
+    rng_xy = np.hypot(pts[:, 0], pts[:, 1])
+    pts = pts[(rng_xy < p.max_range) & (rng_xy > p.min_range)]   # range crop
     plane = fit_ground(pts, p, np.random.default_rng(seed))
     if plane is None:
         return empty

@@ -35,6 +35,8 @@ class SlamParams:
     new_gate: float = 25.0         # start a new landmark only above this (else: ambiguous, skip)
     search_radius: float = 3.0     # only test landmarks this close to the observation [m]
     confirm_hits: int = 3          # observations before a landmark is published
+    geo_vote: float = 0.0          # colour vote per uncoloured observation from its side of the car
+                                   # (FS rule: blue on the left, yellow on the right); 0 = off
 
 
 class EkfSlam:
@@ -98,6 +100,8 @@ class EkfSlam:
             self.hits[j] += 1
             if col:
                 self.votes[j][col] += cf                 # colour vote weighted by confidence
+            elif self.p.geo_vote > 0:                    # no camera colour: weak left/right guess
+                self.votes[j][2 if xy[1] > 0 else 1] += self.p.geo_vote   # left of car = blue, right = yellow
 
     def _associate(self, r: float, b: float, R: np.ndarray, col: int) -> int:
         """Nearest-neighbour association with Mahalanobis gating.

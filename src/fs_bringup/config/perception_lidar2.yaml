@@ -1,0 +1,14 @@
+# Lidar2: low (0.2 m) nose-mounted, covers cones at ~1.4-2.3 m and ~3.6-5.7 m that Lidar1 cannot see.
+# Same output topic as Lidar1; LiDAR-only (camera/YOLO runs in the main instance).
+cone_detector_lidar2:
+  ros__parameters:
+    use_camera: false
+    lidar_topic: /fsds/lidar/Lidar2
+    vehicle_frame: fsds/FSCar
+    lidar.h_min: 0.02
+    lidar.min_aspect: 0.0
+    lidar.max_range: 8.0
+    lidar.min_points: 2
+    lidar.min_range: 0.3
+    lidar.ground_dist: 0.03
+    lidar.cluster_eps: 0.25

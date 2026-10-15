@@ -38,7 +38,9 @@ class ConeDetector(Node):
         p('camera_info_topic', '/camera/camera_info'); p('cones_topic', '/perception/cones')
         p('camera_frame', 'fsds/cam1')
         p('vehicle_frame', 'fsds/FSCar')           # output frame of the cones
+        p('use_camera', True)                 # False: LiDAR-only instance (e.g. the second LiDAR), no image processing
         p('model_path', ''); p('yolo_conf', 0.4)   # YOLOv8 weights ('' = LiDAR only)
+        p('camera_optical', True)             # camera TF frame is optical (FSDS bridge) rather than ENU
         p('gate_px', 60.0)                         # max pixel distance for LiDAR<->box match
         p('image_max_age', 0.3)                    # s; older detections are not used
         p('cam_width', 785); p('cam_height', 785); p('cam_fov', 90.0)   # fallback intrinsics
@@ -49,14 +51,15 @@ class ConeDetector(Node):
         self.lp = LidarParams(**{f: type(getattr(defaults, f))(g('lidar.' + f))
                                  for f in LidarParams.__dataclass_fields__})
         self.K = intrinsics_from_fov(g('cam_width'), g('cam_height'), g('cam_fov'))
-        self.yolo = self._load_yolo(g('model_path'))
+        self.yolo = self._load_yolo(g('model_path')) if g('use_camera') else None
         self.det: Optional[dict] = None            # latest camera detections
         self.tf = Buffer()
         TransformListener(self.tf, self)
         self.diag = LatencyDiag(self)
         self.create_subscription(PointCloud2, g('lidar_topic'), self.on_lidar, qos_profile_sensor_data)
-        self.create_subscription(Image, g('image_topic'), self.on_image, qos_profile_sensor_data)
-        self.create_subscription(CameraInfo, g('camera_info_topic'), self.on_info, 1)
+        if g('use_camera'):
+            self.create_subscription(Image, g('image_topic'), self.on_image, qos_profile_sensor_data)
+            self.create_subscription(CameraInfo, g('camera_info_topic'), self.on_info, 1)
         self.pub = self.create_publisher(ConeArray, g('cones_topic'), 10)
 
     def _load_yolo(self, path: str):
@@ -113,7 +116,7 @@ class ConeDetector(Node):
                 and abs(stamp - self.det['t']) < g('image_max_age')):
             # Frustum fusion: LiDAR centroids -> camera pixels -> nearest detection box
             cam = cents @ T_cam[:3, :3].T + T_cam[:3, 3]
-            uv, valid = project(cam, self.K)
+            uv, valid = project(cam, self.K, g('camera_optical'))
             match = associate(uv, valid, self.det['boxes'], g('gate_px'))
             hit = match >= 0
             colors[hit] = self.det['color'][match[hit]]
