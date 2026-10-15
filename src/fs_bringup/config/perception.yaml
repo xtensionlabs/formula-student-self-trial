@@ -16,7 +16,7 @@ cone_detector_node:
     # min_aspect 0.5) when using a denser LiDAR.
     lidar.h_min: 0.02
     lidar.min_aspect: 0.0
-    lidar.max_range: 20.0
+    lidar.max_range: 35.0
     lidar.min_points: 2
     lidar.min_range: 0.8      # ignore returns from the car body
     lidar.ground_dist: 0.03   # flat sim ground, noise-free LiDAR: keep far cone hits that skim the ground

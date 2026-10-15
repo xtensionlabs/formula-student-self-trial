@@ -3,7 +3,7 @@ path_planner_node:
     map_topic: /slam/map
     corrected_topic: /slam/map_corrected
     # Conservative first-lap values; the GP raises speed lap by lap. Spec prior: a_lat_max 15.
-    a_lat_max: 10.0
-    v_max: 8.0
-    a_accel: 4.0
+    a_lat_max: 8.0
+    v_max: 6.0
+    a_accel: 3.0
     a_brake: 8.0

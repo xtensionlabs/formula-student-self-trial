@@ -16,6 +16,10 @@ from launch_ros.actions import Node
 WS = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..'))
 
 
+# Threaded BLAS busy-waits: one planner node burned 6 cores and starved the simulator and the MPC solver.
+SINGLE_THREAD = {'OPENBLAS_NUM_THREADS': '1', 'OMP_NUM_THREADS': '1', 'MKL_NUM_THREADS': '1'}
+
+
 def generate_launch_description() -> LaunchDescription:
     share = get_package_share_directory('fs_bringup')
     cfg = lambda name: os.path.join(share, 'config', name)
@@ -26,7 +30,7 @@ def generate_launch_description() -> LaunchDescription:
     def node(pkg: str, exe: str, yaml: str = '', **extra) -> Node:
         params = [cfg(yaml)] if yaml else []
         params += [extra.pop('params', {})]
-        return Node(package=pkg, executable=exe, name=extra.pop('name', exe), output='screen', parameters=params, **extra)
+        return Node(package=pkg, executable=exe, name=extra.pop('name', exe), output='screen', additional_env=SINGLE_THREAD, parameters=params, **extra)
 
     return LaunchDescription([
         DeclareLaunchArgument('rviz', default_value='true', description='start RViz2'),

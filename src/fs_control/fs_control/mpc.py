@@ -60,7 +60,9 @@ def make_stage_cost() -> ca.Function:
 
 class Mpc:
     def __init__(self, N: int = 20, dt: float = 0.05, lim: VehicleLimits = VehicleLimits(),
-                 time_limit: float = 0.045) -> None:
+                 time_limit: float = 0.045, steer_rate: float = 1.2, a_lat: float = 9.0) -> None:
+        """steer_rate [rad/s]: max steering change rate; a_lat [m/s^2]: lateral acceleration cap (limits the
+        steering angle at speed: delta * v^2 <= L * a_lat), so the solver never asks for grip the car lacks."""
         self.N, self.dt, self.lim = N, dt, lim
         self.step, self.cost = make_dynamics(lim, dt), make_stage_cost()
         o = self.opti = ca.Opti()
@@ -74,14 +76,21 @@ class Mpc:
             o.subject_to(self.X[:, k + 1] == self.step(self.X[:, k], self.U[:, k]))   # dynamics
         o.minimize(J)
         o.subject_to(self.X[:, 0] == self.p_x0)
+        for k in range(N):
+            prev = self.p_up[0] if k == 0 else self.U[0, k - 1]
+            o.subject_to(o.bounded(-steer_rate * dt, self.U[0, k] - prev, steer_rate * dt))      # steering rate limit
+            o.subject_to(o.bounded(-lim.L * a_lat, self.U[0, k] * self.X[3, k] ** 2, lim.L * a_lat))   # lateral accel cap
         o.subject_to(o.bounded(-lim.d_max, self.U[0, :], lim.d_max))
         o.subject_to(o.bounded(lim.a_min, self.U[1, :], lim.a_max))
         o.subject_to(self.X[3, :] >= 0)                                # no reversing
-        o.solver('ipopt', {'print_time': False, 'ipopt.print_level': 0, 'ipopt.sb': 'yes',
-                           'ipopt.max_cpu_time': time_limit, 'ipopt.max_iter': 50,
-                           'ipopt.tol': 1e-3, 'ipopt.acceptable_tol': 1e-2,
+        # expand: symbolic (SX) evaluation is ~2x faster. Loose tolerances: the controller re-solves every 50 ms,
+        # so a 1e-2 solution tracks as well (measured) at ~11 ms instead of ~19 ms.
+        o.solver('ipopt', {'expand': True, 'print_time': False, 'ipopt.print_level': 0, 'ipopt.sb': 'yes',
+                           'ipopt.max_cpu_time': time_limit, 'ipopt.max_iter': 25,
+                           'ipopt.tol': 1e-2, 'ipopt.acceptable_tol': 5e-2, 'ipopt.acceptable_iter': 1,
                            'ipopt.warm_start_init_point': 'yes', 'ipopt.mu_strategy': 'adaptive'})
         self.Xg = np.zeros((4, N + 1)); self.Ug = np.zeros((2, N))   # warm-start guess
+        self.status = ''
 
     def predict(self, x: np.ndarray, u: np.ndarray) -> np.ndarray:
         """One model step with numbers (e.g. to compensate computation delay)."""
@@ -91,6 +100,9 @@ class Mpc:
               w: MpcWeights) -> Tuple[Optional[np.ndarray], Dict[str, float]]:
         """Return (first input [delta, a] or None on failure, info with solve time in ms)."""
         o = self.opti
+        x0 = np.array(x0, float)
+        x0[3] = max(x0[3], 0.0)                                        # estimated speed can be -0.0x at standstill: infeasible with v >= 0
+        u_prev = np.clip(u_prev, [-self.lim.d_max, self.lim.a_min], [self.lim.d_max, self.lim.a_max])
         o.set_value(self.p_x0, x0); o.set_value(self.p_ref, ref)
         o.set_value(self.p_up, u_prev); o.set_value(self.p_w, w.vec())
         if not np.any(self.Xg):                                        # first solve: start on the reference
@@ -102,10 +114,11 @@ class Mpc:
             ok = True
         except RuntimeError:                                           # infeasible / time limit / max_iter
             sol, ok = None, False
+            self.status = str(o.stats().get("return_status", "unknown"))   # why it failed (logged by the node)
         ms = (time.perf_counter() - t0) * 1e3
         if not ok:
             self.Xg = np.zeros((4, self.N + 1))                        # discard a possibly bad warm start
-            return None, {'ms': ms}
+            return None, {'ms': ms, 'status': self.status}
         X, U = sol.value(self.X), sol.value(self.U)
         self.Xg = np.column_stack([X[:, 1:], X[:, -1]])                # shift warm start by one step
         self.Ug = np.column_stack([U[:, 1:], U[:, -1]])

@@ -25,6 +25,7 @@ class MpcController(Node):
         p('cmd_topic', '/cmd'); p('ann_topic', '/control/ann_cmd'); p('go_topic', '/fs_msgs/msg/GoSignal')
         p('rate_hz', 20.0); p('horizon', 20); p('dt', 0.05)
         p('solve_limit_ms', 45.0); p('ann_max_age', 0.2)
+        p('steer_rate', 1.2); p('a_lat', 9.0)          # steering rate [rad/s] and lateral accel cap [m/s^2]
         p('require_go', True)                         # stay stopped until the GO signal arrived
         p('wheelbase', 1.53); p('lr', 0.765)
         d = MpcWeights()
@@ -33,7 +34,7 @@ class MpcController(Node):
         g = lambda n: self.get_parameter(n).value
         self.w = MpcWeights(**{f: float(g('w.' + f)) for f in d.__dataclass_fields__})
         lim = VehicleLimits(L=g('wheelbase'), lr=g('lr'), d_max=g('d_max'), a_min=g('a_min'), a_max=g('a_max'))
-        self.mpc = Mpc(g('horizon'), g('dt'), lim, g('solve_limit_ms') * 1e-3)
+        self.mpc = Mpc(g('horizon'), g('dt'), lim, g('solve_limit_ms') * 1e-3, g('steer_rate'), g('a_lat'))
         self.sub_group = ReentrantCallbackGroup()      # subscriptions must not wait for the control timer
         self.inputs = ControlInputs(self, self.sub_group)
         self.u_prev = np.zeros(2)                     # last applied [delta, a]

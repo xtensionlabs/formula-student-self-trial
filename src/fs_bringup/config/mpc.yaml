@@ -5,6 +5,9 @@ mpc_controller_node:
     go_topic: /fsds/signal/go
     ann_topic: /control/ann_cmd
     require_go: true
+    a_max: 3.5               # gentle launch: full throttle = 3.5 m/s^2 (raise once tracking is validated)
+    steer_rate: 1.2
+    a_lat: 9.0
     solve_limit_ms: 45.0
     w.q_ct: 4.0
     w.q_head: 3.0

@@ -10,7 +10,7 @@ from fs_control.reference import PathRef, wrap
 
 
 def random_track(rng: np.random.Generator, length: float = 200.0, ds: float = 0.5,
-                 v_max: float = 12.0, a_lat: float = 12.0) -> PathRef:
+                 v_max: float = 12.0, a_lat: float = 8.0) -> PathRef:
     """Open track made of random constant-curvature segments (radius 6..40 m), smoothed."""
     n = int(length / ds)
     kappa, i = np.zeros(n), 0
