@@ -9,7 +9,7 @@ from sensor_msgs.msg import Imu
 from geometry_msgs.msg import TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from fs_perception_py.diag import LatencyDiag
-from fs_state_estimation.ukf import UKF, h_imu, h_gss_body, h_gss_world, make_h_bicycle
+from fs_state_estimation.ukf import UKF, wrap, h_imu, h_gss_body, h_gss_world, make_h_bicycle
 
 
 def quat_to_yaw(q) -> float:
@@ -23,7 +23,7 @@ class StateEstimator(Node):
         # --- parameters (overridden by fs_bringup/config/state_estimator.yaml) ---
         p = self.declare_parameter
         p('imu_topic', '/imu'); p('gss_topic', '/gss'); p('odom_topic', '/state/odometry')
-        p('gss_frame', 'world')          # 'world' or 'body' - frame of the GSS velocity
+        p('gss_frame', 'auto')           # 'world', 'body' or 'auto' (detected from the first turn)
         p('rate_hz', 100.0)
         p('lr', 0.765)                   # CoG -> rear axle [m]
         p('q_diag', [1e-3, 1e-3, 1e-4, 0.5, 0.05, 0.1])   # process noise (per second)
@@ -31,7 +31,8 @@ class StateEstimator(Node):
         p('r_gss', [0.01, 0.01])         # velocity variances
         p('r_bicycle', 0.2)              # strength of the vy = lr*r constraint
         g = lambda n: self.get_parameter(n).value
-        self.gss_world = g('gss_frame') == 'world'
+        self.gss_world = {'world': True, 'body': False}.get(g('gss_frame'))   # None = detect at runtime
+        self.auto_score, self.auto_n = np.zeros(2), 0     # summed |heading error| under (world, body)
         self.R_imu, self.R_gss = np.diag(g('r_imu')), np.diag(g('r_gss'))
         self.R_bic = np.array([[g('r_bicycle')]])
         self.h_bic = make_h_bicycle(g('lr'))
@@ -64,7 +65,26 @@ class StateEstimator(Node):
         if not self.initialised:
             return
         z = np.array([m.twist.twist.linear.x, m.twist.twist.linear.y])
-        self.ukf.update(z, h_gss_world if self.gss_world else h_gss_body, self.R_gss)
+        if self.gss_world is None:                      # frame not known yet
+            self._detect_gss_frame(z)
+            if np.hypot(*z) > 0.3:
+                return                                  # until known, only frame-independent standstill updates
+        self.ukf.update(z, h_gss_world if self.gss_world is not False else h_gss_body, self.R_gss)
+
+    def _detect_gss_frame(self, z: np.ndarray) -> None:
+        """Decide world vs body frame. A car drives along its heading: the velocity direction equals
+        yaw if the GSS is in the world frame, and is ~0 if it is in the body frame."""
+        yaw = self.ukf.x[2]
+        if np.hypot(*z) < 1.0 or abs(wrap(yaw)) < 0.15:   # need motion and a heading that separates the hypotheses
+            return
+        h = np.arctan2(z[1], z[0])
+        self.auto_score += [abs(wrap(h - yaw)), abs(wrap(h))]
+        self.auto_n += 1
+        if self.auto_n >= 40:
+            self.gss_world = bool(self.auto_score[0] < self.auto_score[1])
+            self.get_logger().info(
+                f'GSS frame detected: {"world" if self.gss_world else "body"} (mean heading error '
+                f'world {self.auto_score[0] / 40:.2f} rad, body {self.auto_score[1] / 40:.2f} rad)')
 
     def publish(self) -> None:
         """Timer callback: publish the current estimate as nav_msgs/Odometry."""

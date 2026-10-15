@@ -1,0 +1,15 @@
+# MPC weights below = defaults; overwrite with the output of scripts/tune_mpc_cmaes.py
+mpc_controller_node:
+  ros__parameters:
+    cmd_topic: /fsds/control_command
+    go_topic: /fsds/signal/go
+    ann_topic: /control/ann_cmd
+    require_go: true
+    solve_limit_ms: 45.0
+    w.q_ct: 4.0
+    w.q_head: 3.0
+    w.q_v: 0.5
+    w.r_d: 0.5
+    w.r_a: 0.02
+    w.r_dd: 8.0
+    w.r_da: 0.05

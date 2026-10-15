@@ -1,0 +1,9 @@
+path_planner_node:
+  ros__parameters:
+    map_topic: /slam/map
+    corrected_topic: /slam/map_corrected
+    # Conservative first-lap values; the GP raises speed lap by lap. Spec prior: a_lat_max 15.
+    a_lat_max: 10.0
+    v_max: 8.0
+    a_accel: 4.0
+    a_brake: 8.0

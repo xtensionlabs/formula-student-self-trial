@@ -25,11 +25,11 @@ velocities in the body frame.
 | `/diagnostics` | diagnostic_msgs/DiagnosticArray (`latency_ms` of the IMU callback) |
 
 ## Parameters
-`imu_topic`, `gss_topic`, `odom_topic`, `gss_frame` (`world`|`body`), `rate_hz`, `lr`,
+`imu_topic`, `gss_topic`, `odom_topic`, `gss_frame` (`auto`|`world`|`body`), `rate_hz`, `lr`,
 `q_diag` (process noise), `r_imu`, `r_gss`, `r_bicycle`.
 
 ## Known limitations
 - FSDS bridge topics are namespaced (`/fsds/imu`, `/fsds/gss`); remap via parameters/launch.
-- `gss_frame` must be verified against the sim (docs do not state the frame).
+- The GSS frame is not documented by FSDS: `gss_frame: auto` (default) detects world vs body from the first turn (needs speed > 1 m/s and |yaw| > 0.15 rad); until then only standstill updates are applied. Check the "GSS frame detected" log line.
 - No wheel odometry yet and no bias estimation; position drifts (SLAM corrects it).
 - Process noise values are initial guesses; tune on recorded data.

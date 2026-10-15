@@ -9,8 +9,9 @@ import numpy as np
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from geometry_msgs.msg import PoseWithCovarianceStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped, TransformStamped
 from nav_msgs.msg import Odometry
+from tf2_ros import TransformBroadcaster
 from fs_perception.msg import ConeArray
 from fs_perception_py.diag import LatencyDiag
 from fs_slam.ekf_slam import EkfSlam, SlamParams, relative_pose
@@ -23,12 +24,14 @@ class SlamNode(Node):
         p = self.declare_parameter
         p('cones_topic', '/perception/cones'); p('odom_topic', '/state/odometry')
         p('map_topic', '/slam/map'); p('pose_topic', '/slam/pose'); p('map_frame', 'map')
+        p('vehicle_frame', 'fsds/FSCar')     # TF child map -> vehicle; joins the bridge's static sensor TFs
         d = SlamParams()
         for f in SlamParams.__dataclass_fields__:       # all EKF tuning knobs are parameters
             p(f, getattr(d, f))
         g = lambda n: self.get_parameter(n).value
         self.slam = EkfSlam(SlamParams(**{f: type(getattr(d, f))(g(f)) for f in SlamParams.__dataclass_fields__}))
-        self.frame = g('map_frame')
+        self.frame, self.vehicle_frame = g('map_frame'), g('vehicle_frame')
+        self.tf_pub = TransformBroadcaster(self)
         self.odom: Optional[np.ndarray] = None          # latest odometry pose
         self.last_odom: Optional[np.ndarray] = None     # odometry pose at the previous scan
         self.diag = LatencyDiag(self)
@@ -66,6 +69,11 @@ class SlamNode(Node):
         out.pose.covariance[0], out.pose.covariance[7], out.pose.covariance[35] = P[0, 0], P[1, 1], P[2, 2]
         out.pose.covariance[1], out.pose.covariance[6] = P[0, 1], P[1, 0]
         self.pose_pub.publish(out)
+        t = TransformStamped()                          # map -> vehicle frame for RViz / perception TF lookups
+        t.header, t.child_frame_id = out.header, self.vehicle_frame
+        t.transform.translation.x, t.transform.translation.y = float(x[0]), float(x[1])
+        t.transform.rotation = out.pose.pose.orientation
+        self.tf_pub.sendTransform(t)
 
 
 def main(args=None) -> None:

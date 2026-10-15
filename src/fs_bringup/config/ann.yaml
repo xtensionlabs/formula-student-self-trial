@@ -1,0 +1,4 @@
+# model_path is set by the launch file (models/ann_controller.pt)
+ann_controller_node:
+  ros__parameters:
+    ann_topic: /control/ann_cmd

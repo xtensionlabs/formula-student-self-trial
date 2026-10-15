@@ -1,0 +1,21 @@
+# Names follow D:/FSDS/settings.json (Lidar1, cam1). model_path is set by the launch file.
+cone_detector_node:
+  ros__parameters:
+    lidar_topic: /fsds/lidar/Lidar1
+    image_topic: /fsds/camera/cam1
+    camera_info_topic: /fsds/camera/cam1/camera_info   # the bridge publishes none: FOV params below are used
+    camera_frame: fsds/cam1
+    vehicle_frame: fsds/FSCar
+    cam_width: 785
+    cam_height: 785
+    cam_fov: 90.0
+    yolo_conf: 0.4
+    gate_px: 60.0
+    # Lidar1 has only 4 lasers (+-5 deg): a cone is usually hit by ONE ring, so the cluster has no
+    # vertical extent. Relax the height/aspect rules for this sensor; tighten them (h_min 0.2,
+    # min_aspect 0.5) when using a denser LiDAR.
+    lidar.h_min: 0.02
+    lidar.min_aspect: 0.0
+    lidar.max_range: 20.0
+    lidar.min_points: 3
+    lidar.cluster_eps: 0.25

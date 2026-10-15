@@ -1,0 +1,8 @@
+# UKF fusing IMU + ground speed sensor. Topic names match the FSDS ROS 2 bridge.
+state_estimator_node:
+  ros__parameters:
+    imu_topic: /fsds/imu
+    gss_topic: /fsds/gss
+    odom_topic: /state/odometry
+    gss_frame: auto        # world | body | auto (detected from the first turn)
+    rate_hz: 100.0

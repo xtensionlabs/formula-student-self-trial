@@ -1,0 +1,7 @@
+loop_closure_node:
+  ros__parameters:
+    cones_topic: /perception/cones
+    odom_topic: /state/odometry
+    loop_min_gap: 20         # keyframes between a cone being seen and re-observed
+    loop_radius: 8.0
+    max_shift: 1.4           # keep below half the cone spacing

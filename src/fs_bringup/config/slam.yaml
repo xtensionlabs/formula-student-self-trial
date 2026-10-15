@@ -1,0 +1,7 @@
+slam_node:
+  ros__parameters:
+    cones_topic: /perception/cones
+    odom_topic: /state/odometry
+    map_frame: map
+    vehicle_frame: fsds/FSCar
+    confirm_hits: 3          # observations before a cone enters /slam/map

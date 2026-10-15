@@ -1,0 +1,85 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 5
+      Plane Cell Count: 40
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: true
+      Show Names: false
+    - Class: rviz_default_plugins/PointCloud2
+      Name: LiDAR pointcloud
+      Enabled: true
+      Topic:
+        Value: /fsds/lidar/Lidar1
+        Reliability Policy: Best Effort
+      Style: Points
+      Size (Pixels): 3
+      Color Transformer: AxisColor
+      Axis: Z
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Perception cones (colour = class)
+      Enabled: true
+      Topic:
+        Value: /viz/perception
+    - Class: rviz_default_plugins/MarkerArray
+      Name: SLAM map
+      Enabled: true
+      Topic:
+        Value: /viz/slam_map
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Corrected map (after loop closure)
+      Enabled: true
+      Topic:
+        Value: /viz/corrected_map
+        Durability Policy: Transient Local
+    - Class: rviz_default_plugins/Path
+      Name: Centerline
+      Enabled: true
+      Topic:
+        Value: /planning/centerline
+      Color: 0; 255; 0
+      Line Style: Lines
+      Line Width: 0.06
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Velocity arrows (red slow, green fast)
+      Enabled: true
+      Topic:
+        Value: /viz/velocity
+    - Class: rviz_default_plugins/PoseWithCovariance
+      Name: Car pose (SLAM)
+      Enabled: true
+      Topic:
+        Value: /slam/pose
+      Shape:
+        Value: Axes
+        Axes Length: 1.5
+        Axes Radius: 0.1
+      Covariance:
+        Orientation:
+          Alpha: 0.3
+        Position:
+          Alpha: 0.3
+          Scale: 1
+          Value: true
+  Global Options:
+    Fixed Frame: map
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+  Views:
+    Current:
+      Class: rviz_default_plugins/TopDownOrtho
+      Name: Current View
+      Scale: 12
+      Target Frame: fsds/FSCar
+      Value: TopDownOrtho (rviz_default_plugins)
+    Saved: ~
