@@ -1,0 +1,3 @@
+#!/usr/bin/env python3
+from fs_perception_py.cone_detector_node import main
+main()
