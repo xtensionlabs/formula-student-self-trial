@@ -4,7 +4,7 @@
   <description>fs_control - FS-AI driverless stack</description>
   <maintainer email="team@example.com">team</maintainer><license>MIT</license>
   <buildtool_depend>ament_python</buildtool_depend>
-  <exec_depend>rclpy</exec_depend>
+  <exec_depend>rclpy</exec_depend><exec_depend>fs_slam</exec_depend><exec_depend>fs_planning</exec_depend>
   <exec_depend>fs_perception</exec_depend>
   <exec_depend>fs_msgs</exec_depend>
   <exec_depend>nav_msgs</exec_depend>

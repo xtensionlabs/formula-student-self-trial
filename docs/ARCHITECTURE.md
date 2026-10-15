@@ -16,3 +16,4 @@ Pipeline: sensors -> fs_state_estimation (UKF) + fs_perception (cones) -> fs_sla
 - [x] Step 4: fs_perception (LiDAR cones + YOLO + fusion; PERCEPTION.md). YOLO weights still to train.
 - [x] Step 5: fs_slam (EKF-SLAM + pose-graph loop closure; SLAM.md; synthetic track tests)
 - [x] Step 6: fs_planning (Delaunay centerline, GP speed profile + lap refinement; PLANNING.md)
+- [x] Step 7: fs_control (CasADi MPC + TorchScript ANN fallback, CMA-ES tuner, training script; CONTROL.md)
