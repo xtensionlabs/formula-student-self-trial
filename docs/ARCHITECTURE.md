@@ -12,3 +12,4 @@ Pipeline: sensors -> fs_state_estimation (UKF) + fs_perception (cones) -> fs_sla
 
 ## Status
 - [x] Step 1-2: scaffold + messages (builds clean)
+- [x] Step 3: fs_state_estimation (UKF, 6 unit tests, see STATE_ESTIMATION.md)
